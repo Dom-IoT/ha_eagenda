@@ -1,5 +1,5 @@
 # The name of the addon
-ADDON_NAME = example_addon
+ADDON_NAME = domiot_eagenda
 
 # For old versions of Home Assistant, the addons directory is usually
 # /usr/share/hassio/addons/local
