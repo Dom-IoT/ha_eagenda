@@ -2,4 +2,4 @@
 
 echo "Hello world!"
 
-python3 -m http.server 8000
+uvicorn backend:app --host 0.0.0.0 --port 8080
