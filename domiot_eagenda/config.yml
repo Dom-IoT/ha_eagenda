@@ -11,4 +11,3 @@ arch:
   - armv7
   - i386
 startup: services
-ingress: true

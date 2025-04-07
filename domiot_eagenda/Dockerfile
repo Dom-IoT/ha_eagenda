@@ -1,15 +1,22 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-#Add nginx and create the run folder for nginx.
-RUN \
-  apk --no-cache add \
-    nginx \
-  \
-  && mkdir -p /run/nginx
+RUN apk update && apk add --no-cache \
+    python3 \
+    py3-pip \
+    python3-dev
 
-#Copy our conf into the nginx http.d folder.
-COPY ingress.conf /etc/nginx/http.d/
+WORKDIR /app
 
-#Launch nginx with debug options.
-CMD [ "nginx","-g","daemon off;error_log /dev/stdout debug;" ]
+
+COPY requirements.txt ./
+
+RUN pip3 install --break-system-packages -r requirements.txt
+
+COPY backend.py backend.py
+
+EXPOSE 8001
+
+COPY run.sh /
+RUN chmod a+x /run.sh
+CMD [ "/run.sh" ]
