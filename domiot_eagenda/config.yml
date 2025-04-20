@@ -11,3 +11,8 @@ arch:
   - armv7
   - i386
 startup: services
+
+options:
+  core_addon_hostname: ""
+schema:
+  core_addon_hostname: str
