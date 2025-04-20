@@ -11,3 +11,12 @@ arch:
   - armv7
   - i386
 startup: services
+panel_title: "Rappels & Agenda"
+panel_icon: "mdi:calendar-multiselect"
+panel_admin: false
+ingress: true
+
+options:
+  core_addon_hostname: ""
+schema:
+  core_addon_hostname: str
