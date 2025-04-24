@@ -23,20 +23,25 @@ def inject_url_for():
     """
     return dict(url_for=url_for)
 
+
 @app.route('/')
 def index():
+    logging.info(app.config)
+    logging.info(f"CORE_ADDON_HOSTNAME: {app.config['CORE_ADDON_HOSTNAME']}")
+
     user = request.headers.get('X-Remote-User-Name')
     role = get_user_role(user)
 
     if role == 'patient':
         return redirect('patient')
-    
+
     elif role == 'healthcare_staff':
         return redirect('healthcare_staff')
 
     else:
-        return "Hello, World!"
-    
+        return redirect('noaccess')
+
+
 @app.route('/patient')
 @roles_required(['patient'])
 def patient():
@@ -58,6 +63,7 @@ def patient():
     }
     return render_template('events/kiosk.html', **context)
 
+
 @app.route('/healthcare_staff')
 @roles_required(['healthcare_staff'])
 def healthcare_staff():
@@ -71,6 +77,7 @@ def healthcare_staff():
     }
 
     return render_template('events/list.html', **context)
+
 
 @app.route('/add', methods=['GET', 'POST'])
 @roles_required(["healthcare_staff"], redirect_to='index')
@@ -111,6 +118,7 @@ def add_event():
     categories = Category.query.order_by(Category.name).all()
     return render_template('events/create.html', categories=categories, statuses=Status, colors=Color)
 
+
 @app.route('/categories/create', methods=['POST'])
 @roles_required(["healthcare_staff"], redirect_to='index')
 def create_category():
@@ -127,6 +135,17 @@ def create_category():
     db.session.commit()
 
     return {"id": category.id, "name": category.name}, 201
+
+
+@app.route('/noaccess')
+def no_access():
+    return render_template('no_access.html')
+
+
+@app.route("/missconfig")
+def missconfig():
+    return render_template('missconfig.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
