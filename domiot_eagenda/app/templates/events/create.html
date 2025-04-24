@@ -141,7 +141,7 @@
 
         const categoryName = document.getElementById('categoryName').value;
 
-        fetch('/categories/create', {
+        fetch("{{ url_for('create_category') }}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
