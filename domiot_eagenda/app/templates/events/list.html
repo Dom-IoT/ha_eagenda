@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-3">
+    <h1>Calendrier et rappels</h1>
+
+    <a href="{{ url_for('add_event') }}">Ajouter un événement</a>
+
+    <ul>
+        {% for event in events %}
+            <li>{{event.title}}</li>
+        {% endfor %}
+    </ul>
+
+</div>
+
+{% endblock %}

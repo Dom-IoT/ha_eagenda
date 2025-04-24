@@ -1,7 +1,7 @@
 ---
-name: "eAgenda"
+name: "DomIoT eAgenda"
 description: "eAgenda is a connected reminder system that helps users remember important tasks and events. It can be used to remind users of medication schedules, appointments, or any other important events. eAgenda is part of the DomIoT project."
-version: "0.0.1"
+version: "0.1.0"
 slug: "domiot_eagenda"
 init: false
 arch:
@@ -11,7 +11,7 @@ arch:
   - armv7
   - i386
 startup: services
-panel_title: "Rappels & Agenda"
+panel_title: "Rappels & Calendrier"
 panel_icon: "mdi:calendar-multiselect"
 panel_admin: false
 ingress: true
