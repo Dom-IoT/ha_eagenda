@@ -11,5 +11,6 @@ for key in $(jq -r 'keys[]' /data/options.json); do
 done
 
 
-cd /app/backend/
+cd /app/app
+flask db upgrade
 flask run --host=0.0.0.0 --port=8099
