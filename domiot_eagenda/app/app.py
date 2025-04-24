@@ -26,7 +26,6 @@ def inject_url_for():
 
 @app.route('/')
 def index():
-    logging.info(app.config)
     logging.info(f"CORE_ADDON_HOSTNAME: {app.config['CORE_ADDON_HOSTNAME']}")
 
     user = request.headers.get('X-Remote-User-Name')
