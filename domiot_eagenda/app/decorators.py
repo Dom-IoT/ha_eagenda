@@ -10,14 +10,9 @@ def roles_required(roles: list, redirect_to=None):
             logging.debug(f"Username: {username}, Role: {role}")
 
             if role not in roles:
-
                 return redirect('/')
             else:
-                g.username = username
-                g.user_role = role
-
-
-            return f(*args, **kwargs)
+                return f(*args, **kwargs)
         wrapper.__name__ = f.__name__ 
         return wrapper
     return decorator
