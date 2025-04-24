@@ -3,11 +3,14 @@ from config import Config
 from flask_migrate import Migrate
 from models import db
 from utils import url_for
+import logging
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 migrate = Migrate(app, db)
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @app.context_processor
