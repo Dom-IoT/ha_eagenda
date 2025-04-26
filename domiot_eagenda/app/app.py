@@ -63,6 +63,26 @@ def patient():
     return render_template('events/kiosk.html', **context)
 
 
+@app.route('/api/events/<event_id>/', methods=['POST'])
+@roles_required(['patient', 'healthcare_staff'])
+def update_status(event_id):
+    """
+    API endpoint to update the status of an event
+    """
+    event = Event.query.get(event_id)
+    if not event:
+        return "Event not found", 404
+
+    status = request.form.get('status')
+    if status:
+        event.status = Status[status]
+        db.session.commit()
+        return {"status": "success"}, 200
+    else:
+        return "Invalid status", 400
+
+
+
 @app.route('/api/events/', methods=['GET'])
 @roles_required(['patient', 'healthcare_staff'])
 def list_events_json():
@@ -191,6 +211,7 @@ def add_event():
     return render_template('events/create.html', categories=categories, statuses=Status, colors=Color)
 
 
+
 @app.route('/categories/create', methods=['POST'])
 @roles_required(["healthcare_staff"], redirect_to='index')
 def create_category():
@@ -207,6 +228,7 @@ def create_category():
     db.session.commit()
 
     return {"id": category.id, "name": category.name}, 201
+
 
 
 @app.route('/noaccess')

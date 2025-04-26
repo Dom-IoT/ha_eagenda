@@ -20,15 +20,10 @@
 			</div>
 			<div class="modal-body">
 				Catégories : <span class="badge bg-primary">Catégorie 1</span>
-				<p>
-					Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestias iure aut, perspiciatis ullam
-					nesciunt
-					ea incidunt repellendus, quia obcaecati enim delectus quas similique doloremque. Magni voluptas
-					asperiores quam sed eos?
-				</p>
+				<p></p>
 			</div>
 			<div class="modal-footer justify-content-between">
-				<button type="button" class="btn btn-secondary">J'ai oublié</button>
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">J'ai oublié</button>
 				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Terminé</button>
 			</div>
 		</div>
@@ -44,22 +39,26 @@
 				<div class="card-header d-flex justify-content-between align-items-center">
 					<a class="btn btn btn-primary disabled" href="#">24 avril</a>
 					<h5 class="mb-0 text-center">Aujourd'hui</h5>
-					<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reminderModal">test</button>
+					<button type="button" class="btn btn-danger" data-bs-toggle="modal"
+						data-bs-target="#reminderModal">test</button>
 					<a class="btn btn btn-primary" href="#">26 avril</a>
 				</div>
 				<div class="card-body">
 					<!-- All day events carousel -->
-					<div id="allDayEventsCarousel" class="carousel carouse-dark slide mb-5" data-bs-ride="carousel" data-bs-interval="10000">
+					<div id="allDayEventsCarousel" class="carousel carouse-dark slide mb-5" data-bs-ride="carousel"
+						data-bs-interval="10000">
 						<div class="carousel-inner" id="all-day-events-container">
 							<!-- All-day events will be dynamically inserted here -->
 						</div>
-						<button class="carousel-control-prev" type="button" data-bs-target="#allDayEventsCarousel" data-bs-slide="prev">
+						<button class="carousel-control-prev" type="button" data-bs-target="#allDayEventsCarousel"
+							data-bs-slide="prev">
 							<span class="carousel-control-prev-icon" aria-hidden="true">
 								&
 							</span>
 							<span class="visually-hidden">Précédent</span>
 						</button>
-						<button class="carousel-control-next" type="button" data-bs-target="#allDayEventsCarousel" data-bs-slide="next">
+						<button class="carousel-control-next" type="button" data-bs-target="#allDayEventsCarousel"
+							data-bs-slide="next">
 							<span class="carousel-control-next-icon" aria-hidden="true"></span>
 							<span class="visually-hidden">Suivant</span>
 						</button>
@@ -108,7 +107,7 @@
 			const end = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0]; // Tomorrow's date
 
 			try {
-				const response = await fetch(`{{ url_for("list_events_json") }}?start=${start}&end=${end}`);
+				const response = await fetch(`/api/events/?start=${start}&end=${end}`);
 				if (!response.ok) {
 					throw new Error('Failed to fetch events');
 				}
@@ -116,6 +115,7 @@
 				const data = await response.json();
 				renderAllDayEvents(data.all_day_events || []);
 				renderEvents(data.events || []);
+				checkForReminders(data.events || []); // Check for reminders
 			} catch (error) {
 				console.error('Error fetching events:', error);
 			}
@@ -127,7 +127,7 @@
 			container.innerHTML = ''; // Clear existing content
 
 			if (allDayEvents.length === 0) {
-				container.innerHTML = '<div class="carousel-item active"><div class="h5 text-center"></div></div>';
+				container.innerHTML = '<div class="carousel-item active"><div class="h5 text-center">Aucun événement</div></div>';
 				return;
 			}
 
@@ -163,7 +163,6 @@
 			}
 
 			events.forEach(event => {
-
 				const eventHTML = `
                 <div class="card bg-${event.color}-subtle mb-3">
                     <div class="card-body">
@@ -187,10 +186,81 @@
 			});
 		}
 
+		// Function to check for reminders
+		function checkForReminders(events) {
+			const now = new Date();
+			events.forEach(event => {
+				const eventStart = new Date(event.start_dt);
+				const timeDifference = (eventStart - now) / (1000 * 60); // Difference in minutes
+
+				if (timeDifference > 0 && timeDifference <= 15 && event.status == "PENDING") {
+					showReminderModal(event);
+				}
+			});
+		}
+
+		// Function to show the reminder modal
+		function showReminderModal(event) {
+			const modalTitle = document.getElementById('staticBackdropLabel');
+			const modalBody = document.querySelector('#reminderModal .modal-body');
+			const doneButton = document.querySelector('#reminderModal .btn-primary');
+			const forgotButton = document.querySelector('#reminderModal .btn-secondary');
+
+			// Update modal content
+			const eventDate = new Date(event.start_dt);
+			modalTitle.textContent = `${event.title} - ${eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })} à partir de ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+			modalBody.innerHTML = `
+            Catégories : ${event.categories.map(category => `<span class="badge bg-primary">${category}</span>`).join(' ')}
+            <p>${event.description || 'Aucune description disponible.'}</p>
+        `;
+
+			doneButton.onclick = async () => {
+				try {
+					const formData = new FormData();
+					formData.append('status', 'DONE');
+					const response = await fetch(`/api/events/${event.id}/`, {
+						method: 'POST',
+						body: formData,
+					});
+
+					if (!response.ok) {
+						throw new Error('Failed to update event status');
+					}
+
+					console.log(`Event ${event.id} marked as DONE`);
+				} catch (error) {
+					console.error('Error updating event status:', error);
+				}
+			};
+
+			forgotButton.onclick = async () => {
+				try {
+					const formData = new FormData();
+					formData.append('status', 'MISSED');
+					const response = await fetch(`/api/events/${event.id}/`, {
+						method: 'POST',
+						body: formData,
+					});
+
+					if (!response.ok) {
+						throw new Error('Failed to update event status');
+					}
+
+					console.log(`Event ${event.id} marked as MISSED`);
+				} catch (error) {
+					console.error('Error updating event status:', error);
+				}
+			};
+
+			// Show the modal
+			const reminderModal = new bootstrap.Modal(document.getElementById('reminderModal'));
+			reminderModal.show();
+		}
+
 		// Fetch events on page load
 		document.addEventListener('DOMContentLoaded', () => {
-        fetchEvents(); // Initial fetch
-        setInterval(fetchEvents, 5 * 60 * 1000); // Fetch every 5 minutes
-    });
+			fetchEvents(); // Initial fetch
+			setInterval(fetchEvents, 60 * 1000); // Fetch every minute
+		});
 	</script>
 	{% endblock %}
