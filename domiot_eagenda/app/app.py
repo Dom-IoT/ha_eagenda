@@ -63,6 +63,79 @@ def patient():
     return render_template('events/kiosk.html', **context)
 
 
+@app.route('/api/events/', methods=['GET'])
+@roles_required(['patient', 'healthcare_staff'])
+def list_events_json():
+    """
+    API endpoint to list events in JSON format
+    """
+    event_list = []
+    all_day_events_list = []
+
+    arg_start = request.args.get('start')
+    arg_end = request.args.get('end')
+
+    if arg_start:
+        if arg_end:
+            events = Event.query.filter(
+                Event.all_day == False,
+                Event.start_dt >= datetime.datetime.fromisoformat(arg_start),
+                Event.start_dt <= datetime.datetime.fromisoformat(arg_end)
+            ).order_by(Event.start_dt).all()
+            all_day_events = Event.query.filter(
+                Event.all_day == True,
+                Event.start_dt >= datetime.datetime.fromisoformat(arg_start),
+                Event.start_dt <= datetime.datetime.fromisoformat(arg_end)
+            ).order_by(Event.start_dt).all()
+        else:
+            events = Event.query.filter(
+                Event.all_day == False,
+                Event.start_dt >= datetime.datetime.fromisoformat(arg_start)
+            ).order_by(Event.start_dt).all()
+            all_day_events = Event.query.filter(
+                Event.all_day == True,
+                Event.start_dt >= datetime.datetime.fromisoformat(arg_start)
+            ).order_by(Event.start_dt).all()
+    elif arg_end:
+        events = Event.query.filter(
+            Event.all_day == False,
+            Event.start_dt <= datetime.datetime.fromisoformat(arg_end)
+        ).order_by(Event.start_dt).all()
+        all_day_events = Event.query.filter(
+            Event.all_day == True,
+            Event.start_dt <= datetime.datetime.fromisoformat(arg_end)
+        ).order_by(Event.start_dt).all()
+    else:
+        events = Event.query.filter(Event.all_day == False).all()
+        all_day_events = Event.query.filter(Event.all_day == True).all()
+
+    for event in events:
+        event_list.append({
+            'id': event.id,
+            'title': event.title,
+            'description': event.description,
+            'start_dt': event.start_dt.isoformat(),
+            'end_dt': event.end_dt.isoformat(),
+            'status': event.status.name,
+            'color': event.color.value,
+            'categories': [category.name for category in event.categories]
+        })
+
+    for event in all_day_events:
+        all_day_events_list.append({
+            'id': event.id,
+            'title': event.title,
+            'description': event.description,
+            'start_dt': event.start_dt.isoformat(),
+            'end_dt': event.end_dt.isoformat(),
+            'status': event.status.name,
+            'color': event.color.value,
+            'categories': [category.name for category in event.categories]
+        })
+
+    return {"events": event_list, "all_day_events": all_day_events_list}
+
+
 @app.route('/healthcare_staff')
 @roles_required(['healthcare_staff'])
 def healthcare_staff():
