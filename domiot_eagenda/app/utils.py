@@ -33,7 +33,7 @@ def redirect(url, code=302):
 
     with app.app_context():
         ingress_url = request.headers.get('X-Ingress-Path', '')
-        logging.debug(f"Redirecting to: {ingress_url}{url}")
+        logging.debug(f"Redirecting to: {ingress_url}/{url}")
         return flask_redirect(f"{ingress_url}/{url}", code=code)
 
 def get_user_role(username=""):
