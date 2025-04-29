@@ -162,13 +162,16 @@ def healthcare_staff():
     """
     Healthcare staff dashboard
     """
-    events = Event.query.all()
+    category_id = request.args.get('category', type=int)
+    if category_id:
+        events = Event.query.filter(Event.categories.any(id=category_id)).all()
+        selected_category = category_id
+    else:
+        events = Event.query.all()
+        selected_category = None
 
-    context = {
-        'events': events,
-    }
-
-    return render_template('events/list.html', **context)
+    categories = Category.query.order_by(Category.name).all()
+    return render_template('events/list.html', events=events, categories=categories, selected_category=selected_category)
 
 
 @app.route('/add', methods=['GET', 'POST'])

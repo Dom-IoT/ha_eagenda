@@ -14,13 +14,18 @@
                     Tous les événements
                 </span>
                 <div class="my-0">
-                    <select name="" id="" class="form-select form-select-sm">
-                        <option value="" selected>Filtrer par catégorie</option>
-                    </select>
+                    <form method="get" action="{{ url_for('healthcare_staff') }}">
+                        <select name="category" id="categoryFilter" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="" {% if not selected_category %}selected{% endif %}>Filtrer par catégorie</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
                 </div>
             </div>
-
-
         </div>
         <div class="card-body">
             <table class="table">
