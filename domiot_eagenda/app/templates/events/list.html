@@ -2,16 +2,55 @@
 
 {% block content %}
 <div class="container mt-3">
-    <h1>Calendrier et rappels</h1>
+    <div class="d-flex mb-3">
+        <h1>Calendrier et rappels</h1>
+        <a href="{{ url_for('add_event') }}" class="btn btn-primary ms-auto my-auto">Ajouter un événement</a>
+    </div>
 
-    <a href="{{ url_for('add_event') }}">Ajouter un événement</a>
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between">
+                <span class="my-auto">
+                    Tous les événements
+                </span>
+                <div class="my-0">
+                    <select name="" id="" class="form-select form-select-sm">
+                        <option value="" selected>Filtrer par catégorie</option>
+                    </select>
+                </div>
+            </div>
 
-    <ul>
-        {% for event in events %}
-            <li>{{event.title}}</li>
-        {% endfor %}
-    </ul>
 
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Titre</th>
+                        <th scope="col">Date de début</th>
+                        <th scope="col">Date de fin</th>
+                        <th scope="col">Catégories</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <th scope="row">{{ event.id }}</th>
+                        <td><a href="">{{ event.title }}</a></td>
+                        <td>{{ event.start_dt }}</td>
+                        <td>{{ event.end_dt }}</td>
+                        <td>
+                            {% for category in event.categories %}
+                            <span class="badge bg-primary">{{ category.name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 {% endblock %}
