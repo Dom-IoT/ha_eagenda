@@ -37,9 +37,9 @@
 		<div class="col-xl-6 d-flex flex-column mb-xl-0 mb-3">
 			<div class="card flex-grow-1">
 				<div class="card-header d-flex justify-content-between align-items-center">
-					<a class="btn btn btn-primary disabled" href="#">24 avril</a>
-					<h5 class="mb-0 text-center">Aujourd'hui</h5>
-					<a class="btn btn btn-primary" href="#">26 avril</a>
+					<button type="button" id="previousBtn" class="btn btn btn-primary"></button>
+					<a class="btn btn-link text-center text-decoration-underline">Aujourd'hui</a>
+					<button type="button" id="nextBtn" class="btn btn btn-primary"></button>
 				</div>
 				<div class="card-body">
 					<!-- All day events carousel -->
@@ -259,6 +259,98 @@
 		document.addEventListener('DOMContentLoaded', () => {
 			fetchEvents(); // Initial fetch
 			setInterval(fetchEvents, 60 * 1000); // Fetch every minute
+		});
+	</script>
+	<script>
+		let currentDate = new Date(); // Variable globale pour suivre la date affichée
+
+		// Fonction pour formater une date en "JJ mois"
+		function formatDayMonth(date) {
+			const options = { day: '2-digit', month: 'long' };
+			return date.toLocaleDateString('fr-FR', options);
+		}
+
+		// Fonction pour formater une date en ISO (YYYY-MM-DD)
+		function formatDate(date) {
+			return date.toISOString().split('T')[0];
+		}
+
+		// Fonction pour mettre à jour les événements en fonction de la date actuelle
+		async function fetchEventsForDate(date) {
+			const start = formatDate(date); // Date actuelle
+			const end = formatDate(new Date(date.getTime() + 24 * 60 * 60 * 1000)); // Jour suivant
+
+			try {
+				const response = await fetch(`/api/events/?start=${start}&end=${end}`);
+				if (!response.ok) {
+					throw new Error('Failed to fetch events');
+				}
+
+				const data = await response.json();
+				renderAllDayEvents(data.all_day_events || []);
+				renderEvents(data.events || []);
+				checkForReminders(data.events || []); // Vérifie les rappels
+			} catch (error) {
+				console.error('Error fetching events:', error);
+			}
+		}
+
+		// Fonction pour gérer le clic sur le bouton "Précédent"
+		document.getElementById('previousBtn').addEventListener('click', () => {
+			currentDate.setDate(currentDate.getDate() - 1); // Reculer d'un jour
+			fetchEventsForDate(currentDate);
+			updateNavigationButtons();
+		});
+
+		// Fonction pour gérer le clic sur le bouton "Suivant"
+		document.getElementById('nextBtn').addEventListener('click', () => {
+			currentDate.setDate(currentDate.getDate() + 1); // Avancer d'un jour
+			fetchEventsForDate(currentDate);
+			updateNavigationButtons();
+		});
+
+		// Fonction pour revenir à aujourd'hui en cliquant sur la date
+		document.querySelector('.card-header a').addEventListener('click', (event) => {
+			event.preventDefault(); // Empêche le comportement par défaut du lien
+			currentDate = new Date(); // Réinitialiser à aujourd'hui
+			fetchEventsForDate(currentDate);
+			updateNavigationButtons();
+		});
+
+		// Fonction pour mettre à jour l'état des boutons de navigation et leurs titres
+		function updateNavigationButtons() {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0); // Réinitialiser l'heure pour comparer uniquement les dates
+
+			const previousBtn = document.getElementById('previousBtn');
+			const nextBtn = document.getElementById('nextBtn');
+
+			// Mettre à jour les titres des boutons
+			const previousDate = new Date(currentDate);
+			previousDate.setDate(currentDate.getDate() - 1);
+			previousBtn.textContent = formatDayMonth(previousDate);
+
+			const nextDate = new Date(currentDate);
+			nextDate.setDate(currentDate.getDate() + 1);
+			nextBtn.textContent = formatDayMonth(nextDate);
+
+			// Désactiver le bouton "Précédent" si la date affichée est aujourd'hui ou antérieure
+			if (currentDate <= today) {
+				previousBtn.classList.add('disabled');
+			} else {
+				previousBtn.classList.remove('disabled');
+			}
+
+			// Mettre à jour le titre avec la date actuelle
+			const title = document.querySelector('.card-header a');
+			const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+			title.textContent = currentDate.toLocaleDateString('fr-FR', options);
+		}
+
+		// Initialisation lors du chargement de la page
+		document.addEventListener('DOMContentLoaded', () => {
+			fetchEventsForDate(currentDate); // Charger les événements pour aujourd'hui
+			updateNavigationButtons(); // Mettre à jour les boutons
 		});
 	</script>
 	{% endblock %}
