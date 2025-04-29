@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block extrastyle %}
+<style>
+    .form-check-input:checked + .btn {
+        box-shadow: 0 0 0 0.25rem rgba(0,0,0,.25);
+        outline: 2px solid #000;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Modal pour créer une catégorie -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryModalLabel">Créer une catégorie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Nom de la catégorie</label>
+                        <input type="text" class="form-control" id="categoryName" name="name" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container p-5">
+    <h1 class="mb-4">Modifier un événement</h1>
+
+    <form method="post" class="">
+        <div class="mb-3">
+            <label for="title" class="form-label">Titre</label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ event.title }}" required>
+        </div>
+
+        <!-- Pick a color among colors -->
+        <div class="mb-3">
+            <label class="form-label">Couleur</label>
+            <div class="d-flex flex-wrap gap-2">
+                {% for color in colors %}
+                <div class="form-check">
+                    <input class="form-check-input d-none" type="radio" name="color" id="color_{{ color.value }}" value="{{ color.value }}" {% if event.color.value == color.value %}checked{% endif %}>
+                    <label for="color_{{ color.value }}" class="btn btn-{{ color.value }} border" style="width: 40px; height: 40px; padding: 0;"></label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3">{{ event.description }}</textarea>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="start_dt" class="form-label">Date de début</label>
+                <input type="{{ 'date' if event.all_day else 'datetime-local' }}" class="form-control" id="start_dt" name="start_dt" value="{{ event.start_dt.strftime('%Y-%m-%dT%H:%M') if not event.all_day else event.start_dt.strftime('%Y-%m-%d') }}" required>
+            </div>
+            {% if not event.all_day %}
+            <div class="col-md-6" id="end_dt_div">
+                <label for="end_dt" class="form-label">Date de fin</label>
+                <input type="datetime-local" class="form-control" id="end_dt" name="end_dt" value="{{ event.end_dt.strftime('%Y-%m-%dT%H:%M') }}">
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- All day -->
+        <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="all_day" name="all_day" {% if event.all_day %}checked{% endif %} onchange="toggleAllDay(this)">
+            <label class="form-check-label" for="all_day">Toute la journée</label>
+        </div>
+
+        {% if categories %}
+        <div class="mb-3">
+            <label for="categories" class="form-label">Catégories</label>
+            <select multiple class="form-select" id="categories" name="categories">
+                {% for category in categories %}
+                <option value="{{ category.id }}" {% if category.id in event.category_ids %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs catégories.</div>
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="openCategoryModal()">Créer une catégorie</button>
+        </div>
+        {% else %}
+        <div class="card mb-3" id="empty_cat_card">
+            <div class="card-body">
+                <div class="text-muted small text-center">
+                    <div class="mb-3">
+                        Vous n'avez pas de catégories disponibles.
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="openCategoryModal()" id="nope">Créer une catégorie
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary">Modifier l'événement</button>
+        <a href="{{ url_for('healthcare_staff') }}" class="btn btn-secondary ms-2">Annuler</a>
+    </form>
+</div>
+
+<script>
+    function toggleAllDay(checkbox) {
+        const startInput = document.getElementById('start_dt');
+        const endDiv = document.getElementById('end_dt_div');
+
+        if (checkbox.checked) {
+            // Change input type to "date" for all-day events
+            startInput.type = 'date';
+
+            // Remove the end_dt field if it exists
+            if (endDiv) {
+                endDiv.parentNode.removeChild(endDiv);
+            }
+        } else {
+            // Change input type back to "datetime-local"
+            startInput.type = 'datetime-local';
+
+            // Add the end_dt field if it doesn't exist
+            if (!document.getElementById('end_dt_div')) {
+                const endDiv = document.createElement('div');
+                endDiv.className = 'col-md-6';
+                endDiv.id = 'end_dt_div';
+                endDiv.innerHTML = `
+                    <label for="end_dt" class="form-label">Date de fin</label>
+                    <input type="datetime-local" class="form-control" id="end_dt" name="end_dt">
+                `;
+                startInput.parentNode.parentNode.appendChild(endDiv);
+            }
+        }
+    }
+</script>
+<script>
+    function openCategoryModal() {
+        const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

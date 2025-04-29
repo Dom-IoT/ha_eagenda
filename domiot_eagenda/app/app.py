@@ -210,6 +210,41 @@ def add_event():
     categories = Category.query.order_by(Category.name).all()
     return render_template('events/create.html', categories=categories, statuses=Status, colors=Color)
 
+@app.route('/edit/<event_id>/', methods=['GET', 'POST'])
+@roles_required(["healthcare_staff"], redirect_to='index')
+def edit_event(event_id):
+    event = Event.query.get(event_id)
+    if not event:
+        return "Event not found", 404
+
+    if request.method == 'POST':
+        # Update the existing event's attributes
+        event.title = request.form['title']
+        event.description = request.form.get('description')
+        event.all_day = request.form.get('all_day') is not None
+
+        if event.all_day:
+            event.start_dt = datetime.datetime.fromisoformat(request.form['start_dt'])
+            event.end_dt = event.start_dt + datetime.timedelta(days=1)
+        else:
+            event.start_dt = datetime.datetime.fromisoformat(request.form['start_dt'])
+            event.end_dt = datetime.datetime.fromisoformat(request.form['end_dt'])
+
+        event.color = Color(request.form['color'])
+
+        # Update categories
+        event.categories.clear()
+        selected_category_ids = request.form.getlist('categories')
+        for cid in selected_category_ids:
+            category = Category.query.get(int(cid))
+            if category:
+                event.categories.append(category)
+
+        db.session.commit()
+        return redirect("healthcare_staff")
+
+    categories = Category.query.order_by(Category.name).all()
+    return render_template('events/edit.html', event=event, categories=categories, statuses=Status, colors=Color)
 
 
 @app.route('/categories/create', methods=['POST'])

@@ -37,7 +37,7 @@
                     {% for event in events %}
                     <tr>
                         <th scope="row">{{ event.id }}</th>
-                        <td><a href="">{{ event.title }}</a></td>
+                        <td><a href="{{ url_for('edit_event', event_id=event.id) }}">{{ event.title }}</a></td>
                         <td>{{ event.start_dt }}</td>
                         <td>{{ event.end_dt }}</td>
                         <td>
