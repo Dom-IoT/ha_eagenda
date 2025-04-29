@@ -1,4 +1,14 @@
 {% extends "base.html" %}
+{% block extrastyle %}
+<style>
+    .form-check-input:checked + .btn {
+        box-shadow: 0 0 0 0.25rem rgba(0,0,0,.25);
+        outline: 2px solid #000;
+    }
+</style>
+
+{% endblock %}
+
 {% block content %}
 <!-- Modal pour créer une catégorie -->
 <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
@@ -32,12 +42,15 @@
 
         <!-- Pick a color among colors -->
         <div class="mb-3">
-            <label for="color" class="form-label">Couleur</label>
-            <select class="form-select" id="color" name="color">
+            <label class="form-label">Couleur</label>
+            <div class="d-flex flex-wrap gap-2">
                 {% for color in colors %}
-                <option value="{{ color.value }}">{{ color.value }}</option>
+                <div class="form-check">
+                    <input class="form-check-input d-none" type="radio" name="color" id="color_{{ color.value }}" value="{{ color.value }}"  {% if loop.first %}checked{% endif %}>
+                    <label for="color_{{ color.value }}" class="btn btn-{{ color.value }} border" style="width: 40px; height: 40px; padding: 0;"></label>
+                </div>
                 {% endfor %}
-            </select>
+            </div>
         </div>
 
         <div class="mb-3">
