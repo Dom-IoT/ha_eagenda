@@ -22,5 +22,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filter by date in patient view
 - Reminder notifications for patients
 
-[Unreleased]: https://github.com/DomIoT/ha_eagenda/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/DomIoT/ha_eagenda/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Dom-IoT/ha_eagenda/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Dom-IoT/ha_eagenda/releases/tag/v1.0.0
