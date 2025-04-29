@@ -103,6 +103,9 @@
         <button type="submit" class="btn btn-primary">Modifier l'événement</button>
         <a href="{{ url_for('healthcare_staff') }}" class="btn btn-secondary ms-2">Annuler</a>
     </form>
+    <form method="post" action="{{ url_for('delete_event', event_id=event.id) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet événement ?');">
+        <button type="submit" class="btn btn-danger mt-2">Supprimer l'événement</button>
+    </form>
 </div>
 
 <script>

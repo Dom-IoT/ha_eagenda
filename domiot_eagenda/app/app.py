@@ -247,6 +247,21 @@ def edit_event(event_id):
     return render_template('events/edit.html', event=event, categories=categories, statuses=Status, colors=Color)
 
 
+@app.route('/delete/<int:event_id>/', methods=['POST'])
+@roles_required(["healthcare_staff"], redirect_to='index')
+def delete_event(event_id):
+    """
+    Route to delete an event
+    """
+    event = Event.query.get(event_id)
+    if not event:
+        return "Event not found", 404
+
+    db.session.delete(event)
+    db.session.commit()
+    return redirect(url_for('healthcare_staff'))
+
+
 @app.route('/categories/create', methods=['POST'])
 @roles_required(["healthcare_staff"], redirect_to='index')
 def create_category():
