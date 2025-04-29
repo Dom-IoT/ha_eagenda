@@ -26,7 +26,6 @@ def inject_url_for():
 
 @app.route('/')
 def index():
-    logging.info(app.config)
     logging.info(f"CORE_ADDON_HOSTNAME: {app.config['CORE_ADDON_HOSTNAME']}")
 
     user = request.headers.get('X-Remote-User-Name')
@@ -64,19 +63,115 @@ def patient():
     return render_template('events/kiosk.html', **context)
 
 
+@app.route('/api/events/<event_id>/', methods=['POST'])
+@roles_required(['patient', 'healthcare_staff'])
+def update_status(event_id):
+    """
+    API endpoint to update the status of an event
+    """
+    event = Event.query.get(event_id)
+    if not event:
+        return "Event not found", 404
+
+    status = request.form.get('status')
+    if status:
+        event.status = Status[status]
+        db.session.commit()
+        return {"status": "success"}, 200
+    else:
+        return "Invalid status", 400
+
+
+
+@app.route('/api/events/', methods=['GET'])
+@roles_required(['patient', 'healthcare_staff'])
+def list_events_json():
+    """
+    API endpoint to list events in JSON format
+    """
+    event_list = []
+    all_day_events_list = []
+
+    arg_start = request.args.get('start')
+    arg_end = request.args.get('end')
+
+    if arg_start:
+        if arg_end:
+            events = Event.query.filter(
+                Event.all_day == False,
+                Event.start_dt >= datetime.datetime.fromisoformat(arg_start),
+                Event.start_dt <= datetime.datetime.fromisoformat(arg_end)
+            ).order_by(Event.start_dt).all()
+            all_day_events = Event.query.filter(
+                Event.all_day == True,
+                Event.start_dt >= datetime.datetime.fromisoformat(arg_start),
+                Event.start_dt <= datetime.datetime.fromisoformat(arg_end)
+            ).order_by(Event.start_dt).all()
+        else:
+            events = Event.query.filter(
+                Event.all_day == False,
+                Event.start_dt >= datetime.datetime.fromisoformat(arg_start)
+            ).order_by(Event.start_dt).all()
+            all_day_events = Event.query.filter(
+                Event.all_day == True,
+                Event.start_dt >= datetime.datetime.fromisoformat(arg_start)
+            ).order_by(Event.start_dt).all()
+    elif arg_end:
+        events = Event.query.filter(
+            Event.all_day == False,
+            Event.start_dt <= datetime.datetime.fromisoformat(arg_end)
+        ).order_by(Event.start_dt).all()
+        all_day_events = Event.query.filter(
+            Event.all_day == True,
+            Event.start_dt <= datetime.datetime.fromisoformat(arg_end)
+        ).order_by(Event.start_dt).all()
+    else:
+        events = Event.query.filter(Event.all_day == False).all()
+        all_day_events = Event.query.filter(Event.all_day == True).all()
+
+    for event in events:
+        event_list.append({
+            'id': event.id,
+            'title': event.title,
+            'description': event.description,
+            'start_dt': event.start_dt.isoformat(),
+            'end_dt': event.end_dt.isoformat(),
+            'status': event.status.name,
+            'color': event.color.value,
+            'categories': [category.name for category in event.categories]
+        })
+
+    for event in all_day_events:
+        all_day_events_list.append({
+            'id': event.id,
+            'title': event.title,
+            'description': event.description,
+            'start_dt': event.start_dt.isoformat(),
+            'end_dt': event.end_dt.isoformat(),
+            'status': event.status.name,
+            'color': event.color.value,
+            'categories': [category.name for category in event.categories]
+        })
+
+    return {"events": event_list, "all_day_events": all_day_events_list}
+
+
 @app.route('/healthcare_staff')
 @roles_required(['healthcare_staff'])
 def healthcare_staff():
     """
     Healthcare staff dashboard
     """
-    events = Event.query.all()
+    category_id = request.args.get('category', type=int)
+    if category_id:
+        events = Event.query.filter(Event.categories.any(id=category_id)).all()
+        selected_category = category_id
+    else:
+        events = Event.query.all()
+        selected_category = None
 
-    context = {
-        'events': events,
-    }
-
-    return render_template('events/list.html', **context)
+    categories = Category.query.order_by(Category.name).all()
+    return render_template('events/list.html', events=events, categories=categories, selected_category=selected_category)
 
 
 @app.route('/add', methods=['GET', 'POST'])
@@ -118,6 +213,57 @@ def add_event():
     categories = Category.query.order_by(Category.name).all()
     return render_template('events/create.html', categories=categories, statuses=Status, colors=Color)
 
+@app.route('/edit/<event_id>/', methods=['GET', 'POST'])
+@roles_required(["healthcare_staff"], redirect_to='index')
+def edit_event(event_id):
+    event = Event.query.get(event_id)
+    if not event:
+        return "Event not found", 404
+
+    if request.method == 'POST':
+        # Update the existing event's attributes
+        event.title = request.form['title']
+        event.description = request.form.get('description')
+        event.all_day = request.form.get('all_day') is not None
+
+        if event.all_day:
+            event.start_dt = datetime.datetime.fromisoformat(request.form['start_dt'])
+            event.end_dt = event.start_dt + datetime.timedelta(days=1)
+        else:
+            event.start_dt = datetime.datetime.fromisoformat(request.form['start_dt'])
+            event.end_dt = datetime.datetime.fromisoformat(request.form['end_dt'])
+
+        event.color = Color(request.form['color'])
+
+        # Update categories
+        event.categories.clear()
+        selected_category_ids = request.form.getlist('categories')
+        for cid in selected_category_ids:
+            category = Category.query.get(int(cid))
+            if category:
+                event.categories.append(category)
+
+        db.session.commit()
+        return redirect("healthcare_staff")
+
+    categories = Category.query.order_by(Category.name).all()
+    return render_template('events/edit.html', event=event, categories=categories, statuses=Status, colors=Color)
+
+
+@app.route('/delete/<int:event_id>/', methods=['POST'])
+@roles_required(["healthcare_staff"], redirect_to='index')
+def delete_event(event_id):
+    """
+    Route to delete an event
+    """
+    event = Event.query.get(event_id)
+    if not event:
+        return "Event not found", 404
+
+    db.session.delete(event)
+    db.session.commit()
+    return redirect(url_for('healthcare_staff'))
+
 
 @app.route('/categories/create', methods=['POST'])
 @roles_required(["healthcare_staff"], redirect_to='index')
@@ -135,6 +281,7 @@ def create_category():
     db.session.commit()
 
     return {"id": category.id, "name": category.name}, 201
+
 
 
 @app.route('/noaccess')

@@ -6,7 +6,6 @@
         outline: 2px solid #000;
     }
 </style>
-
 {% endblock %}
 
 {% block content %}
@@ -32,12 +31,12 @@
 </div>
 
 <div class="container p-5">
-    <h1 class="mb-4">Créer un événement</h1>
+    <h1 class="mb-4">Modifier un événement</h1>
 
     <form method="post" class="">
         <div class="mb-3">
             <label for="title" class="form-label">Titre</label>
-            <input type="text" class="form-control" id="title" name="title" required>
+            <input type="text" class="form-control" id="title" name="title" value="{{ event.title }}" required>
         </div>
 
         <!-- Pick a color among colors -->
@@ -46,7 +45,7 @@
             <div class="d-flex flex-wrap gap-2">
                 {% for color in colors %}
                 <div class="form-check">
-                    <input class="form-check-input d-none" type="radio" name="color" id="color_{{ color.value }}" value="{{ color.value }}"  {% if loop.first %}checked{% endif %}>
+                    <input class="form-check-input d-none" type="radio" name="color" id="color_{{ color.value }}" value="{{ color.value }}" {% if event.color.value == color.value %}checked{% endif %}>
                     <label for="color_{{ color.value }}" class="btn btn-{{ color.value }} border" style="width: 40px; height: 40px; padding: 0;"></label>
                 </div>
                 {% endfor %}
@@ -55,23 +54,25 @@
 
         <div class="mb-3">
             <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            <textarea class="form-control" id="description" name="description" rows="3">{{ event.description }}</textarea>
         </div>
 
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="start_dt" class="form-label">Date de début</label>
-                <input type="datetime-local" class="form-control" id="start_dt" name="start_dt" required>
+                <input type="{{ 'date' if event.all_day else 'datetime-local' }}" class="form-control" id="start_dt" name="start_dt" value="{{ event.start_dt.strftime('%Y-%m-%dT%H:%M') if not event.all_day else event.start_dt.strftime('%Y-%m-%d') }}" required>
             </div>
+            {% if not event.all_day %}
             <div class="col-md-6" id="end_dt_div">
                 <label for="end_dt" class="form-label">Date de fin</label>
-                <input type="datetime-local" class="form-control" id="end_dt" name="end_dt">
+                <input type="datetime-local" class="form-control" id="end_dt" name="end_dt" value="{{ event.end_dt.strftime('%Y-%m-%dT%H:%M') }}">
             </div>
+            {% endif %}
         </div>
 
         <!-- All day -->
         <div class="form-check mb-3">
-            <input type="checkbox" class="form-check-input" id="all_day" name="all_day" onchange="toggleAllDay(this)">
+            <input type="checkbox" class="form-check-input" id="all_day" name="all_day" {% if event.all_day %}checked{% endif %} onchange="toggleAllDay(this)">
             <label class="form-check-label" for="all_day">Toute la journée</label>
         </div>
 
@@ -80,12 +81,11 @@
             <label for="categories" class="form-label">Catégories</label>
             <select multiple class="form-select" id="categories" name="categories">
                 {% for category in categories %}
-                <option value="{{ category.id }}">{{ category.name }}</option>
+                <option value="{{ category.id }}" {% if category.id in event.category_ids %}selected{% endif %}>{{ category.name }}</option>
                 {% endfor %}
             </select>
             <div class="form-text">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs catégories.</div>
-            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="openCategoryModal()">Créer une
-                catégorie</button>
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="openCategoryModal()">Créer une catégorie</button>
         </div>
         {% else %}
         <div class="card mb-3" id="empty_cat_card">
@@ -96,33 +96,36 @@
                     </div>
                     <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="openCategoryModal()" id="nope">Créer une catégorie
                 </div>
-
             </div>
         </div>
         {% endif %}
 
-        <button type="submit" class="btn btn-primary">Créer l'événement</button>
+        <button type="submit" class="btn btn-primary">Modifier l'événement</button>
         <a href="{{ url_for('healthcare_staff') }}" class="btn btn-secondary ms-2">Annuler</a>
+    </form>
+    <form method="post" action="{{ url_for('delete_event', event_id=event.id) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet événement ?');">
+        <button type="submit" class="btn btn-danger mt-2">Supprimer l'événement</button>
     </form>
 </div>
 
 <script>
-    // Fonction pour basculer entre datetime-local et date
     function toggleAllDay(checkbox) {
         const startInput = document.getElementById('start_dt');
-        const endInput = document.getElementById('end_dt_div');
+        const endDiv = document.getElementById('end_dt_div');
 
         if (checkbox.checked) {
-            // Change input types to "date"
+            // Change input type to "date" for all-day events
             startInput.type = 'date';
-            // Remove end_dt if it exists
-            if (endInput) {
-                endInput.parentNode.removeChild(endInput);
+
+            // Remove the end_dt field if it exists
+            if (endDiv) {
+                endDiv.parentNode.removeChild(endDiv);
             }
         } else {
-            // Revert input types to "datetime-local"
+            // Change input type back to "datetime-local"
             startInput.type = 'datetime-local';
-            // Create end_dt_div if it doesn't exist
+
+            // Add the end_dt field if it doesn't exist
             if (!document.getElementById('end_dt_div')) {
                 const endDiv = document.createElement('div');
                 endDiv.className = 'col-md-6';
@@ -133,13 +136,6 @@
                 `;
                 startInput.parentNode.parentNode.appendChild(endDiv);
             }
-            // Set end_dt to the same value as start_dt
-            const startValue = startInput.value;
-            if (startValue) {
-                const startDate = new Date(startValue);
-                const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Ajoute 1 heure
-                document.getElementById('end_dt').value = endDate.toISOString().slice(0, 16);
-            }
         }
     }
 </script>
@@ -148,59 +144,5 @@
         const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
         modal.show();
     }
-
-    document.getElementById('categoryForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        const categoryName = document.getElementById('categoryName').value;
-
-        fetch("{{ url_for('create_category') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({ name: categoryName }),
-        })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => { throw new Error(text); });
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Vérifier si l'élément <select> existe
-                let select = document.getElementById('categories');
-                if (!select) {
-                    // Si le <select> n'existe pas, le créer dynamiquement
-                    const container = document.createElement('div');
-                    container.className = 'mb-3';
-                    container.innerHTML = `
-                        <label for="categories" class="form-label">Catégories</label>
-                        <select multiple class="form-select" id="categories" name="categories"></select>
-                        <div class="form-text">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs catégories.</div>
-                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="openCategoryModal()">Créer une catégorie</button>
-                    `;
-                    //  le conteneur à la place de empty_cat_card
-                    const emptyCatCard = document.getElementById('empty_cat_card');
-                    emptyCatCard.parentNode.replaceChild(container, emptyCatCard);
-                    select = document.getElementById('categories');
-                }
-
-                // Ajouter la nouvelle catégorie au <select>
-                const option = document.createElement('option');
-                option.value = data.id;
-                option.textContent = data.name;
-                option.selected = true;
-                select.appendChild(option);
-
-
-                // Fermer le modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
-                modal.hide();
-            })
-            .catch(error => {
-                alert('Erreur : ' + error.message);
-            });
-    });
 </script>
 {% endblock %}
