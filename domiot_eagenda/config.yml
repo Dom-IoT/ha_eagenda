@@ -1,7 +1,7 @@
 ---
 name: "DomIoT eAgenda"
 description: "eAgenda is a connected reminder system that helps users remember important tasks and events. It can be used to remind users of medication schedules, appointments, or any other important events. eAgenda is part of the DomIoT project."
-version: "1.0.0"
+version: "1.0.1"
 slug: "domiot_eagenda"
 init: false
 arch:
@@ -17,6 +17,6 @@ panel_admin: false
 ingress: true
 
 options:
-  core_addon_hostname: ""
+  core_addon_hostname: "db53363a-domiot-core"
 schema:
   core_addon_hostname: str
