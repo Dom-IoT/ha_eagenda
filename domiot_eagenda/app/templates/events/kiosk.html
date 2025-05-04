@@ -99,13 +99,21 @@
 		updateDateTime();
 	</script>
 	<script>
+		// The application is served behind a reverse proxy. The following constant is a workaround to get the correct 
+		// API URL. The real URL of the API is the same as the current page URL, 
+		// but with "/api/events" instead of "/patient".
+
+		const BASE_URL = window.location.toString().replace(/\/patient$/, '');
+		console.debug("API_URL is", BASE_URL); 
+
 		// Function to fetch events from the API
 		async function fetchEvents() {
+
 			const start = new Date().toISOString().split('T')[0]; // Today's date
 			const end = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0]; // Tomorrow's date
 
 			try {
-				const response = await fetch(`/api/events/?start=${start}&end=${end}`);
+				const response = await fetch(`${BASE_URL}/api/events/?start=${start}&end=${end}`); // Use apiUrl for fetching events
 				if (!response.ok) {
 					throw new Error('Failed to fetch events');
 				}
@@ -216,7 +224,7 @@
 				try {
 					const formData = new FormData();
 					formData.append('status', 'DONE');
-					const response = await fetch(`/api/events/${event.id}/`, {
+					const response = await fetch(`${BASE_URL}/api/events/${event.id}/`, {
 						method: 'POST',
 						body: formData,
 					});
@@ -226,6 +234,7 @@
 					}
 
 					console.log(`Event ${event.id} marked as DONE`);
+					fetchEventsForDate(currentDate); // Refresh events
 				} catch (error) {
 					console.error('Error updating event status:', error);
 				}
@@ -235,7 +244,8 @@
 				try {
 					const formData = new FormData();
 					formData.append('status', 'MISSED');
-					const response = await fetch(`/api/events/${event.id}/`, {
+
+					const response = await fetch(`${BASE_URL}/api/events/${event.id}/`, {
 						method: 'POST',
 						body: formData,
 					});
@@ -281,7 +291,7 @@
 			const end = formatDate(new Date(date.getTime() + 24 * 60 * 60 * 1000)); // Jour suivant
 
 			try {
-				const response = await fetch(`/api/events/?start=${start}&end=${end}`);
+				const response = await fetch(`${BASE_URL}/api/events/?start=${start}&end=${end}`);
 				if (!response.ok) {
 					throw new Error('Failed to fetch events');
 				}
