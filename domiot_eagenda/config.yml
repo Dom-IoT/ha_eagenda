@@ -17,6 +17,6 @@ panel_admin: false
 ingress: true
 
 options:
-  core_addon_hostname: ""
+  core_addon_hostname: "db53363a-domiot-core"
 schema:
   core_addon_hostname: str
