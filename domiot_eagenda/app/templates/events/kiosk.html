@@ -37,7 +37,7 @@
 		<div class="col-xl-6 d-flex flex-column mb-xl-0 mb-3">
 			<div class="card flex-grow-1">
 				<div class="card-header d-flex justify-content-between align-items-center">
-					<button type="button" id="previousBtn" class="btn btn btn-primary"></button>
+					<button type="button" id="previousBtn" class="btn btn btn-primary disabled"></button>
 					<a class="btn btn-link text-center text-decoration-underline">Aujourd'hui</a>
 					<button type="button" id="nextBtn" class="btn btn btn-primary"></button>
 				</div>
@@ -345,7 +345,7 @@
 			nextBtn.textContent = formatDayMonth(nextDate);
 
 			// Désactiver le bouton "Précédent" si la date affichée est aujourd'hui ou antérieure
-			if (currentDate <= today) {
+			if (previousDate < today) {
 				previousBtn.classList.add('disabled');
 			} else {
 				previousBtn.classList.remove('disabled');
