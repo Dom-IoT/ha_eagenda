@@ -10,21 +10,40 @@
 {% endblock %}
 
 {% block content %}
-<div class="modal modal-lg fade" id="reminderModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+
+
+<div class="modal modal-lg" id="reminderModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
 	aria-labelledby="staticBackdropLabel" aria-hidden="true">
 	<div class="modal-dialog modal-dialog-centered">
 		<div class="modal-content">
 			<div class="modal-header">
-				<h1 class="modal-title fs-5" id="staticBackdropLabel">Nom de l'événement - 26 avril 2025 à partir de 15h
-				</h1>
+				<h1 class="modal-title fs-5" id="staticBackdropLabel"></h1>
 			</div>
 			<div class="modal-body">
-				Catégories : <span class="badge bg-primary">Catégorie 1</span>
+				Catégories : <span class="badge bg-primary"></span>
+				<p></p>
+			</div>
+			<div class="modal-footer justify-content-between">
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">J'ai vu le rappel</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal modal-lg" id="validationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+	aria-labelledby="staticBackdropLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h1 class="modal-title fs-5" id="staticBackdropLabel"></h1>
+			</div>
+			<div class="modal-body">
+				Catégories : <span class="badge bg-primary"></span>
 				<p></p>
 			</div>
 			<div class="modal-footer justify-content-between">
 				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">J'ai oublié</button>
-				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Terminé</button>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Je l'ai fait</button>
 			</div>
 		</div>
 	</div>
@@ -104,7 +123,7 @@
 		// but with "/api/events" instead of "/patient".
 
 		const BASE_URL = window.location.toString().replace(/\/patient$/, '');
-		console.debug("API_URL is", BASE_URL); 
+		console.debug("API_URL is", BASE_URL);
 
 		// Function to fetch events from the API
 		async function fetchEvents() {
@@ -192,34 +211,89 @@
 			});
 		}
 
-		// Function to check for reminders
+		// Function to check for reminders and validation
 		function checkForReminders(events) {
 			const now = new Date();
+
 			events.forEach(event => {
 				const eventStart = new Date(event.start_dt);
 				const timeDifference = (eventStart - now) / (1000 * 60); // Difference in minutes
 
-				if (timeDifference > 0 && timeDifference <= 15 && event.status == "PENDING") {
+				// Show the reminder modal if the event starts in 15 minutes
+				if (timeDifference > 0 && timeDifference <= 15 && event.status !== 'REMINDED') {
 					showReminderModal(event);
 				}
+
+				// Show the Validation Modal if the event has started and its status is not DONE
+				if (timeDifference <= 0 && event.status !== 'DONE') {
+					showValidationModal(event);
+				}
+
+				// Show validationModal only after the event has started
+
+				if (timeDifference <= 0) {
+					// Logic for showing validation modal can be added here
+				}
+
 			});
 		}
 
-		// Function to show the reminder modal
+		// Function to show the Reminder Modal
 		function showReminderModal(event) {
-			const modalTitle = document.getElementById('staticBackdropLabel');
-			const modalBody = document.querySelector('#reminderModal .modal-body');
-			const doneButton = document.querySelector('#reminderModal .btn-primary');
-			const forgotButton = document.querySelector('#reminderModal .btn-secondary');
+			console.log('Show reminder modal for event', event);
 
+			const modalTitle = document.querySelector('#reminderModal .modal-header');
+			const modalBody = document.querySelector('#reminderModal .modal-body');
+			const remindedButton = document.querySelector('#reminderModal .btn-primary'); // "J'ai vu le rappel" button
+
+			// Update modal content
+			const eventDate = new Date(event.start_dt);
+			modalTitle.innerHTML = `${event.title} - ${eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })} à partir de ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+			modalBody.innerHTML = `
+				<p>${event.description || 'Aucune description disponible.'}</p>
+			`;
+
+			// Add click event listener to the "J'ai vu le rappel" button
+			remindedButton.onclick = async () => {
+				try {
+					const formData = new FormData();
+					formData.append('status', 'REMINDED');
+
+					const response = await fetch(`${BASE_URL}/api/events/${event.id}/`, {
+						method: 'POST',
+						body: formData,
+					});
+
+					if (!response.ok) {
+						throw new Error('Failed to update event status');
+					}
+
+					console.log(`Event ${event.id} marked as REMINDED`);
+				} catch (error) {
+					console.error('Error updating event status:', error);
+				}
+			};
+
+			// Show the modal
+			const reminderModal = new bootstrap.Modal(document.getElementById('reminderModal'));
+			reminderModal.show();
+		}
+
+		// Function to show the Validation Modal
+		function showValidationModal(event) {
+			const modalTitle = document.querySelector('#validationModal .modal-header');
+			const modalBody = document.querySelector('#validationModal .modal-body');
+			const doneButton = document.querySelector('#validationModal .btn-primary');
+			const forgotButton = document.querySelector('#validationModal .btn-secondary');
+			console.log('Show validation modal for event', event);
 			// Update modal content
 			const eventDate = new Date(event.start_dt);
 			modalTitle.textContent = `${event.title} - ${eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })} à partir de ${eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
 			modalBody.innerHTML = `
-            Catégories : ${event.categories.map(category => `<span class="badge bg-primary">${category}</span>`).join(' ')}
-            <p>${event.description || 'Aucune description disponible.'}</p>
-        `;
+				<p>${event.description || 'Aucune description disponible.'}</p>
+			`;
 
+			// Add click event listener to the "Je l'ai fait" button
 			doneButton.onclick = async () => {
 				try {
 					const formData = new FormData();
@@ -240,6 +314,7 @@
 				}
 			};
 
+			// Add click event listener to the "J'ai oublié" button
 			forgotButton.onclick = async () => {
 				try {
 					const formData = new FormData();
@@ -261,9 +336,21 @@
 			};
 
 			// Show the modal
-			const reminderModal = new bootstrap.Modal(document.getElementById('reminderModal'));
-			reminderModal.show();
+			const validationModal = new bootstrap.Modal(document.getElementById('validationModal'));
+			validationModal.show();
 		}
+
+		// Function to ensure the modal backdrop is removed after dismissing the modal
+		function removeModalBackdrop() {
+			const backdrops = document.querySelectorAll('.modal-backdrop');
+			backdrops.forEach(backdrop => backdrop.remove());
+			document.body.classList.remove('modal-open'); // Remove the class that prevents scrolling
+			document.body.style.overflow = ''; // Reset overflow style
+		}
+
+		// Add event listeners to handle modal dismissal
+		document.getElementById('reminderModal').addEventListener('hidden.bs.modal', removeModalBackdrop);
+		document.getElementById('validationModal').addEventListener('hidden.bs.modal', removeModalBackdrop);
 
 		// Fetch events on page load
 		document.addEventListener('DOMContentLoaded', () => {
