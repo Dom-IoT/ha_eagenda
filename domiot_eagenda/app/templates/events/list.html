@@ -15,10 +15,13 @@
                 </span>
                 <div class="my-0">
                     <form method="get" action="{{ url_for('healthcare_staff') }}">
-                        <select name="category" id="categoryFilter" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="" {% if not selected_category %}selected{% endif %}>Filtrer par catégorie</option>
+                        <select name="category" id="categoryFilter" class="form-select form-select-sm"
+                            onchange="this.form.submit()">
+                            <option value="" {% if not selected_category %}selected{% endif %}>Filtrer par catégorie
+                            </option>
                             {% for category in categories %}
-                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                            <option value="{{ category.id }}" {% if selected_category==category.id %}selected{% endif
+                                %}>
                                 {{ category.name }}
                             </option>
                             {% endfor %}
@@ -35,6 +38,7 @@
                         <th scope="col">Titre</th>
                         <th scope="col">Date de début</th>
                         <th scope="col">Date de fin</th>
+                        <th scope="col">Status</th>
                         <th scope="col">Catégories</th>
                     </tr>
                 </thead>
@@ -45,6 +49,19 @@
                         <td><a href="{{ url_for('edit_event', event_id=event.id) }}">{{ event.title }}</a></td>
                         <td>{{ event.start_dt }}</td>
                         <td>{{ event.end_dt }}</td>
+
+                        <td>
+                            {% if event.status.value == 'pending' %}
+                            <span class="badge bg-secondary">{{ event.status.value }}</span>
+                            {% elif event.status.value == 'done' %}
+                            <span class="badge bg-success">{{ event.status.value }}</span>
+                            {% elif event.status.value == 'reminded' %}
+                            <span class="badge bg-warning">{{ event.status.value }}</span>
+                            {% elif event.status.value == 'missed' %}
+                            <span class="badge bg-danger">{{ event.status.value }}</span>
+                            {% endif %}
+
+                        </td>
                         <td>
                             {% for category in event.categories %}
                             <span class="badge bg-primary">{{ category.name }}</span>

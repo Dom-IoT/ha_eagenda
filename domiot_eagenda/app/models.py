@@ -11,6 +11,7 @@ class Status(enum.Enum):
     DONE = "done"
     PENDING = "pending"
     MISSED = "missed"
+    REMINDED = "reminded"
 
 class Color(enum.Enum):
     PRIMARY = "primary"
